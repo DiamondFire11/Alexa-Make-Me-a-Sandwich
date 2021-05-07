@@ -8,7 +8,7 @@ local component = require('component')
 local term = require('term')
 local internet = require("internet")
 local uuid = require("uuid")
-local json = require("json")
+local json = require("json") -- Requires json.lua by rxi
 local shell = require("shell")
 
 -- Bind ME Controller interface
