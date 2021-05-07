@@ -6,3 +6,4 @@ The server requires the following dependencies to run:
 - node-json-db
 
 node-json-db is used so I can easily map ingame UUIDs to the Alexa/human friendly name.
+I figured that MongoDB would be overkill for this project and for what I need both are quite fast.
