@@ -22,6 +22,7 @@ function AECraftingManager:newManager(controller)
 
     manager.crafter = AECrafter:new(controller)
     manager.log = {}
+    manager.status = {}
     manager.crafting = {}
     manager.toCraft = {}
 
@@ -36,14 +37,29 @@ function AECraftingManager:manage()
                 if type(craftStatus) == 'table' then
                     self.crafting[key] = craftStatus
                     self.toCraft[key] = nil -- Dequeue job
+
+                    local job = self.status[key]
+                    job[2] = "CRAFTING"
+                    self.status[key] = job
+
                     self:logger(3, "Started job "..tostring(key))
                 end
 
                 if craftStatus == 'NO_AVAIL_CPU' then
+                    -- Update status
+                    local job = self.status[key]
+                    job[2] = "WAIT"
+                    self.status[key] = job
+
                     self:logger(2, "Failed to initialize job for "..tostring(key).." all crafting CPUs are currently busy.")
                 end
 
                 if craftStatus == 'INIT_ERR' then
+                    -- Update status
+                    local job = self.status[key]
+                    job[2] = "ERROR"
+                    self.status[key] = job
+
                     self.toCraft[key] = nil
                     self:logger(1, "Failed to bind crafter for "..tostring(key)..", please check recipe and try again!")
                     self:logger(2, "Removing job "..tostring(key).." from crafting queue")
@@ -61,10 +77,18 @@ function AECraftingManager:checkCraftingStatus()
             if value.isCanceled() then
                 self:logger(1, "Job request for "..tostring(key).." was cancelled by ME controller")
                 self.crafting[key] = nil
+
+                -- Update status
+                local job = self.status[key]
+                job[2] = "ERROR"
+                self.status[key] = job
             end
             if value.isDone() then
                 self:logger(3, "Completed job "..tostring(key))
                 self.crafting[key] = nil
+
+                -- Update status
+                self.status[key] = nil
             end
         end
     end
@@ -73,14 +97,15 @@ end
 -- Fix clashing requests
 function AECraftingManager:queueCraft(item, amount, rush)
     self.toCraft[item] = {amount, rush}
+    self.status[item] = {amount, "QUEUE"} -- Create Status
     self:logger(3, ("Queued job "..tostring(item)))
 end
 
 function AECraftingManager:displayJobList()
-    for key, value in pairs(self.toCraft) do
+    for key, value in pairs(self.status) do
         print("Item: ".. tostring(key))
         print("Amount: ".. tostring(value))
-        print(" ")
+
     end
 end
 
@@ -117,6 +142,7 @@ function AECraftingManager:dumpLogs()
 
         term.write(message[2].."\n")
     end
+    self.log = {}
 end
 
 function AECraftingManager:hasJobsInQueue()
@@ -128,6 +154,14 @@ end
 
 function AECraftingManager:isCrafting()
     for _,_ in pairs(self.crafting) do
+        return true
+    end
+    return false
+end
+
+-- Helper function returns true if there are any active jobs
+function AECraftingManager:hasJobs()
+    for _,_ in pairs(self.status) do
         return true
     end
     return false
