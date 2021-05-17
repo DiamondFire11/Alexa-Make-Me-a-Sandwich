@@ -8,14 +8,16 @@ local component = require('component')
 local term = require('term')
 local internet = require("internet")
 local uuid = require("uuid")
-local json = require("json") -- Requires json.lua by rxi
+local json = require("json")
 local shell = require("shell")
 
 -- Bind ME Controller interface
 local me = component.me_controller
+local gpu = component.gpu
 
 -- Run APIs to load from filesystem
 os.execute("map.lua")
+os.execute("uiManager.lua")
 os.execute("AECrafter.lua")
 os.execute("AECraftingManager.lua")
 
@@ -29,15 +31,16 @@ function main()
     queueJobs(manager, jobs)
 
     while true do
-        term.setCursor(1, 1)
         manager:manage()
-        manager:dumpLogs()
+        updateUI(manager)
         os.sleep(2)
-        -- Check to break testing env
-        if not manager:hasJobsInQueue() and not manager:isCrafting() then
-            break
-        end
+
+        -- Ask server for new tasks
+        jobs = getJobsFromAPI(manager, config)
+        queueJobs(manager, jobs)
     end
+
+    gpu.setResolution(160,50)
 end
 
 function queueJobs(manager, data)
@@ -51,8 +54,6 @@ end
 
 -- Contacts Node.js server for pending jobs
 function getJobsFromAPI(manager, config)
-    manager:logger(3, "Querying job server for new tasks")
-
     local url = "http://diamondfire11.ngrok.io/get?uuid="..tostring(config.uuid)
     local data = contactServer(url)
 
