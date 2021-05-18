@@ -21,6 +21,7 @@ function AECraftingManager:newManager(controller)
     end
 
     manager.crafter = AECrafter:new(controller)
+    manager.hasUpdate = true
     manager.log = {}
     manager.status = {}
     manager.crafting = {}
@@ -41,6 +42,7 @@ function AECraftingManager:manage()
                     local job = self.status[key]
                     job[2] = "CRAFTING"
                     self.status[key] = job
+                    self.hasUpdate = true
 
                     self:logger(3, "Started job "..tostring(key))
                 end
@@ -50,6 +52,7 @@ function AECraftingManager:manage()
                     local job = self.status[key]
                     job[2] = "WAIT"
                     self.status[key] = job
+                    self.hasUpdate = true
 
                     self:logger(2, "Failed to initialize job for "..tostring(key).." all crafting CPUs are currently busy.")
                 end
@@ -59,6 +62,7 @@ function AECraftingManager:manage()
                     local job = self.status[key]
                     job[2] = "ERROR"
                     self.status[key] = job
+                    self.hasUpdate = true
 
                     self.toCraft[key] = nil
                     self:logger(1, "Failed to bind crafter for "..tostring(key)..", please check recipe and try again!")
@@ -82,6 +86,7 @@ function AECraftingManager:checkCraftingStatus()
                 local job = self.status[key]
                 job[2] = "ERROR"
                 self.status[key] = job
+                self.hasUpdate = true
             end
             if value.isDone() then
                 self:logger(3, "Completed job "..tostring(key))
@@ -89,6 +94,7 @@ function AECraftingManager:checkCraftingStatus()
 
                 -- Update status
                 self.status[key] = nil
+                self.hasUpdate = true
             end
         end
     end
@@ -98,6 +104,8 @@ end
 function AECraftingManager:queueCraft(item, amount, rush)
     self.toCraft[item] = {amount, rush}
     self.status[item] = {amount, "QUEUE"} -- Create Status
+    self.hasUpdate = true
+
     self:logger(3, ("Queued job "..tostring(item)))
 end
 
@@ -165,4 +173,12 @@ function AECraftingManager:hasJobs()
         return true
     end
     return false
+end
+
+function AECraftingManager:getUpdateFlagStatus()
+    return self.hasUpdate
+end
+
+function AECraftingManager:resetUpdateFlag()
+    self.hasUpdate = false
 end
