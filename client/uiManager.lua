@@ -27,7 +27,7 @@ function updateUI(manager)
         gpu.setForeground(0x000000)
         local limit = 0
         for key, value in pairs(manager.status) do
-            if limit > 9 then
+            if limit >= 9 then
                 break
             end
 
