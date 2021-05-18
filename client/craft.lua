@@ -32,8 +32,13 @@ function main()
 
     while true do
         manager:manage()
-        updateUI(manager)
-        os.sleep(2)
+
+        if manager:getUpdateFlagStatus() then
+            updateUI(manager)
+            manager:resetUpdateFlag()
+        end
+
+        os.sleep(5)
 
         -- Ask server for new tasks
         jobs = getJobsFromAPI(manager, config)
