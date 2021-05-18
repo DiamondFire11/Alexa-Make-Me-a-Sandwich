@@ -24,7 +24,7 @@ function updateUI(manager)
         term.write("IDLE");
     else
         gpu.setResolution(109,40)
-        gpu.setForeground(0x555555)
+        gpu.setForeground(0x000000)
         local limit = 0
         for key, value in pairs(manager.status) do
             if limit > 9 then
@@ -72,10 +72,12 @@ function getStatus(statusCode)
 end
 
 function populateBox(item, amount, col, row)
-    term.setCursor(col+9, row+3)
+    local nameLength = math.ceil(string.len(item)/2)
+    local amountLength = math.ceil(string.len(tostring(amount))/2)
+    term.setCursor(col+17-nameLength, row+3)
     term.write(item)
 
-    term.setCursor(col+15, row+6)
+    term.setCursor(col+17-amountLength, row+6)
     term.write(amount)
 
     term.setCursor(col, row)
