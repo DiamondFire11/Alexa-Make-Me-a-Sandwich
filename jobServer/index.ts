@@ -9,11 +9,17 @@ let controllerDB = new JsonDB(new Config("controllerDB", true, true, '/'));
 
 // Send recipe db to game
 app.get("/queue", (req, res) => {
-    const name: string = req.query.name;
-    const amount: number = parseInt(req.query.amount);
-    const item: string = req.query.item;
+    const job: object = {
+        "controller": req.query.name,
+        "amount": parseInt(req.query.amount),
+        "item": req.query.item,
+        "status": false
+    };
 
-    res.send(queueJob(name, amount, item));
+    res.setHeader('Content-Type', 'application/json');
+    // @ts-ignore
+    job.status = queueJob(job.controller, job.amount, job.item);
+    res.end(JSON.stringify(job));
 });
 
 // Send recipe db to game
@@ -36,7 +42,7 @@ app.listen(port, () => {
 });
 
 // Registers UUID and Name in database
-function registerUUID(name: string, uuid: string){
+function registerUUID(name: string, uuid: string): string{
     try{
         if (controllerDB.getIndex("/controllers", uuid, "uuid") != -1 || controllerDB.getIndex("/controllers", name, "name") != -1){
             console.log(`Cannot register ${uuid} for that UUID already exists.`)
@@ -53,19 +59,21 @@ function registerUUID(name: string, uuid: string){
 }
 
 // Appends new job to bottom of job queue
-function queueJob(name: string, amount: number, item: string){
+function queueJob(name: string, amount: number, item: string): boolean{
     const index: number = controllerDB.getIndex("/controllers", name, "name");
 
+    item = fixCapitalization(item);
     if (index != -1){
+        const uuid: string = controllerDB.getData(`/controllers[${index}]/uuid`); //Send job queue to game
         controllerDB.push(`/controllers[${index}]/recipes[]`, {item: item, amount: amount});
-        console.log(`Queued job for ${name} requesting ${amount} of ${item}`)
-        return "SUCCESS";
+        console.log(`Queued job for ${uuid} requesting ${amount} of ${item}`)
+        return true;
     }
-    return "FAILURE";
+    return false;
 }
 
 // Gets the current job list from the database
-function getJobs(uuid: string){
+function getJobs(uuid: string): object{
     try {
         const index: number = controllerDB.getIndex("/controllers", uuid, "uuid");
 
@@ -82,4 +90,27 @@ function getJobs(uuid: string){
         console.log(`Error accessing DB`);
         return null;
     }
+}
+
+// Fix the capitalization of the item so the game can queue the proper recipe
+function fixCapitalization(str: string): string {
+    let item = "";
+    let iterator = 0;
+    const words = str.split(' ');
+    const filter = ["and", "of"];
+    words.forEach(word => {
+        if(!filter.includes(word)){
+            item += word.charAt(0).toUpperCase() + word.slice(1);
+        }else{
+            item += word;
+        }
+
+        ++iterator;
+
+        if(iterator <= words.length - 1){
+            item += " ";
+        }
+    });
+
+    return item;
 }
